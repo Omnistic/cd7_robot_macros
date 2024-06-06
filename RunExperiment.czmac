@@ -4,20 +4,24 @@
   <Version>1.0</Version>
   <Language>Python</Language>
   <Text>from sample_functions import get_barcode, get_timestamp
+from cd7_functions import set_magnification
 
-clr.AddReferenceByPartialName("Zeiss.Micro.AMP")
+clr.AddReferenceByPartialName('Zeiss.Micro.AMP')
 from Zeiss.Micro.AMP.Scripting import LiveScanScriptingPlugin
 
 ZenLiveScan = LiveScanScriptingPlugin.Instance
 
-experimentName = "SpiroC_Robot_Testing"
-plateType = "Aceto96.czsht"
-additionalParameter = ""
+experimentName = 'SpiroC_Robot_Testing'
+plateType = 'Aceto96.czsht'
+additionalParameter = ''
 
-# Data Folder. Data will be stored there
-data_path = "D:/UserData/Transfer/"
+dataPath = 'D:/UserData/Transfer/'
 
-# Is the macro run manually or from the robot?
+screening_experiments = ['SpiroC_Robot', 'SpiroC_Robot_Testing']
+testing_index = 1
+actual_experiments = ['SpiroC_V010_Robot', 'MS-PlateOverview-003']
+
+# Is the macro executed by the robot?
 try:
     experimentName = sys.argv[1]
     plateType = sys.argv[2]
@@ -25,90 +29,84 @@ try:
 
     robot_execution = True
 except:
+    # In manual execution, load the sample.
     ZenLiveScan.LoadTrayAndPrescan()
-    
+
     robot_execution = False
 
-if experimentName=="":
-    print "Experiment name cannot be empty"
-    
-elif experimentName == "SpiroC_Robot" or experimentName == "SpiroC_Robot_Testing":
+# From Zeiss boilerplate template (?).
+if experimentName == '':
+    print 'Experiment name cannot be empty'
+# Screening experiment.
+elif experimentName in screening_experiments:
     testing = False
-    if experimentName == "SpiroC_Robot_Testing":
+    if experimentName == screening_experiments[testing_index]:
         testing = True
-        
-    timestamp = get_timestamp() # so we can use the same timestamp later on    
 
-    #   set magnification 
-    Zen.Devices.ObjectiveChanger.TargetPosition = 2
-    Zen.Devices.ObjectiveChanger.Apply()
-    Zen.Devices.Optovar.TargetPosition = 1
-    Zen.Devices.Optovar.Apply()
-    
-    # start experiment ONE
+    # A timestamp is also found in the metadata. However, a single
+    # timestamp is wanted for both experiments in a run as they
+    # should be identified as belonging to the same run.
+    timestamp = get_timestamp()
+
+    # =============== Main experiment =============== #
+    if not set_magnification(Zen, '5x0.35NA', optovar='2x'):
+        print('Warning: magnification not changed.')
+
+    experimentName = actual_experiments[0]
     if testing:
-        experimentName = "SpiroC_V010_Robot-Truncated"
-    else:
-        experimentName = "SpiroC_V010_Robot"
+        experimentName += '-Truncated'
+
     exp = Zen.Acquisition.Experiments.GetByName(experimentName)
     PlateScan = Zen.Acquisition.Execute(exp)
 
-    # get the barcode:
     barcode = get_barcode(PlateScan)
 
-    # Save file with new filename
-    PlateScan.Save(data_path + barcode + "-unprocessed-" + timestamp + ".czi")
+    PlateScan.Save(dataPath + barcode + '-unprocessed-' + timestamp + '.czi')
     PlateScan.Close()
 
-    #start transfer
-    with open(data_path + "start", "w") as file:
+    # Start tracking of saved files for transfer to image analysis server.
+    with open(dataPath + 'start', 'w') as file:
         pass
 
+    # =============== Plate overview =============== #
+    if not set_magnification(Zen, '5x0.35NA', optovar='1x'):
+        print('Warning: magnification not changed.')
 
-    #----------  2nd script: Plate Overview -------------------
-    
-    #   set magnification
-    # Set 5x (0.35) x 1x
-    Zen.Devices.ObjectiveChanger.TargetPosition = 2
-    Zen.Devices.ObjectiveChanger.Apply()
-    Zen.Devices.Optovar.TargetPosition = 2
-    Zen.Devices.Optovar.Apply()
-
-
-    # Execute and Save Plate overview experiment:
+    experimentName = actual_experiments[1]
     if testing:
-        experimentName = "MS-PlateOverview-003-Truncated"
-    else:
-        experimentName = "MS-PlateOverview-003"
+        experimentName += '-Truncated'
+
     exp = Zen.Acquisition.Experiments.GetByName(experimentName)
     PlateOverview = Zen.Acquisition.Execute(exp)
-    PlateOverview.Save(data_path + barcode + "-PO-unprocessed-" + timestamp + ".czi")
+
+    PlateOverview.Save(dataPath + barcode + '-PO-unprocessed-' + timestamp + '.czi')
     PlateOverview.Close()
-    
-    #start transfer
-    with open(data_path + "start", "w") as file:
+
+    # Restart tracking in case previous one timed-out
+    with open(dataPath + 'start', 'w') as file:
         pass
         
-    # from PAA: Whatever is printed gets picked up by the robot..... 
+    # From PAA: Whatever is printed gets picked up by the robot.
     retstring = ZenLiveScan.GetCurrentError()
-    if retstring=="Successful":
-        print "Experiment Completed : ",experimentName    
+    if retstring=='Successful':
+        print('Experiment Completed: {}'.format(experimentName))
+
+    # In manual exection, eject the sample.
     if not robot_execution:
         ZenLiveScan.EjectTray()
-    
-    
+# From Zeiss boilerplate template (?).
 else:
     experiment = ZenExperiment()
-    experiment.Load(experimentName,ZenSettingDirectory.User)
+    experiment.Load(experimentName, ZenSettingDirectory.User)
     experiment.SetActive()
     outputexperiment1 = Zen.Acquisition.Execute(experiment)
     retstring = ZenLiveScan.GetCurrentError()
-    if retstring=="Successful":
-        print "Experiment Completed : ",experiment.Name
+    if retstring == 'Successful':
+        print('Experiment Completed: {}'.format(experiment.Name()))
 </Text>
   <Author></Author>
   <Description></Description>
   <Keywords></Keywords>
-  <Row>91</Row>
-  <Column>27</Column>
+  <Row>47</Row>
+  <Column>35</Column>
 </Script>
