@@ -1,0 +1,114 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Script>
+  <Context>Zen26</Context>
+  <Version>1.0</Version>
+  <Language>Python</Language>
+  <Text>from sample_functions import get_barcode, get_timestamp
+
+clr.AddReferenceByPartialName("Zeiss.Micro.AMP")
+from Zeiss.Micro.AMP.Scripting import LiveScanScriptingPlugin
+
+ZenLiveScan = LiveScanScriptingPlugin.Instance
+
+experimentName = "SpiroC_Robot_Testing"
+plateType = "Aceto96.czsht"
+additionalParameter = ""
+
+# Data Folder. Data will be stored there
+data_path = "D:/UserData/Transfer/"
+
+# Is the macro run manually or from the robot?
+try:
+    experimentName = sys.argv[1]
+    plateType = sys.argv[2]
+    additionalParameter = sys.argv[3]
+
+    robot_execution = True
+except:
+    ZenLiveScan.LoadTrayAndPrescan()
+    
+    robot_execution = False
+
+if experimentName=="":
+    print "Experiment name cannot be empty"
+    
+elif experimentName == "SpiroC_Robot" or experimentName == "SpiroC_Robot_Testing":
+    testing = False
+    if experimentName == "SpiroC_Robot_Testing":
+        testing = True
+        
+    timestamp = get_timestamp() # so we can use the same timestamp later on    
+
+    #   set magnification 
+    Zen.Devices.ObjectiveChanger.TargetPosition = 2
+    Zen.Devices.ObjectiveChanger.Apply()
+    Zen.Devices.Optovar.TargetPosition = 1
+    Zen.Devices.Optovar.Apply()
+    
+    # start experiment ONE
+    if testing:
+        experimentName = "SpiroC_V010_Robot-Truncated"
+    else:
+        experimentName = "SpiroC_V010_Robot"
+    exp = Zen.Acquisition.Experiments.GetByName(experimentName)
+    PlateScan = Zen.Acquisition.Execute(exp)
+
+    # get the barcode:
+    barcode = get_barcode(PlateScan)
+
+    # Save file with new filename
+    PlateScan.Save(data_path + barcode + "-unprocessed-" + timestamp + ".czi")
+    PlateScan.Close()
+
+    #start transfer
+    with open(data_path + "start", "w") as file:
+        pass
+
+
+    #----------  2nd script: Plate Overview -------------------
+    
+    #   set magnification
+    # Set 5x (0.35) x 1x
+    Zen.Devices.ObjectiveChanger.TargetPosition = 2
+    Zen.Devices.ObjectiveChanger.Apply()
+    Zen.Devices.Optovar.TargetPosition = 2
+    Zen.Devices.Optovar.Apply()
+
+
+    # Execute and Save Plate overview experiment:
+    if testing:
+        experimentName = "MS-PlateOverview-003-Truncated"
+    else:
+        experimentName = "MS-PlateOverview-003"
+    exp = Zen.Acquisition.Experiments.GetByName(experimentName)
+    PlateOverview = Zen.Acquisition.Execute(exp)
+    PlateOverview.Save(data_path + barcode + "-PO-unprocessed-" + timestamp + ".czi")
+    PlateOverview.Close()
+    
+    #start transfer
+    with open(data_path + "start", "w") as file:
+        pass
+        
+    # from PAA: Whatever is printed gets picked up by the robot..... 
+    retstring = ZenLiveScan.GetCurrentError()
+    if retstring=="Successful":
+        print "Experiment Completed : ",experimentName    
+    if not robot_execution:
+        ZenLiveScan.EjectTray()
+    
+    
+else:
+    experiment = ZenExperiment()
+    experiment.Load(experimentName,ZenSettingDirectory.User)
+    experiment.SetActive()
+    outputexperiment1 = Zen.Acquisition.Execute(experiment)
+    retstring = ZenLiveScan.GetCurrentError()
+    if retstring=="Successful":
+        print "Experiment Completed : ",experiment.Name
+</Text>
+  <Author></Author>
+  <Description></Description>
+  <Keywords></Keywords>
+  <Row>91</Row>
+  <Column>27</Column>
+</Script>
