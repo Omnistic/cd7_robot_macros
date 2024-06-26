@@ -3,13 +3,18 @@
   <Context>Zen26</Context>
   <Version>1.0</Version>
   <Language>Python</Language>
-  <Text>from sample_functions import get_barcode, get_timestamp
-from cd7_functions import set_magnification
+  <Text>from _cd7_functions import set_magnification, TruncatedExperiment
+from _logging import log_message
+from _sample_functions import get_barcode, get_timestamp
 
 clr.AddReferenceByPartialName('Zeiss.Micro.AMP')
 from Zeiss.Micro.AMP.Scripting import LiveScanScriptingPlugin
 
 ZenLiveScan = LiveScanScriptingPlugin.Instance
+
+verbose = True
+log_path = 'D:\UserData\david\log.txt'
+log_message(log_path, verbose, '==================== Running macro ====================')
 
 experimentName = 'SpiroC_Robot_Testing'
 plateType = 'Aceto96.czsht'
@@ -19,7 +24,7 @@ dataPath = 'D:/UserData/Transfer/'
 
 screening_experiments = ['SpiroC_Robot', 'SpiroC_Robot_Testing']
 testing_index = 1
-actual_experiments = ['SpiroC_V010_Robot', 'MS-PlateOverview-003']
+actual_experiments = ['SpiroC_V010_Robot-4Channels', 'MS-PlateOverview-003']
 
 # Is the macro executed by the robot?
 try:
@@ -34,14 +39,18 @@ except:
 
     robot_execution = False
 
+log_message(log_path, verbose, 'Robot execution: {}'.format(robot_execution))
+
 # From Zeiss boilerplate template (?).
 if experimentName == '':
-    print 'Experiment name cannot be empty'
+    print('Experiment name cannot be empty.')
 # Screening experiment.
 elif experimentName in screening_experiments:
     testing = False
     if experimentName == screening_experiments[testing_index]:
         testing = True
+
+    log_message(log_path, verbose, 'Testing: {}'.format(testing))
 
     # A timestamp is also found in the metadata. However, a single
     # timestamp is wanted for both experiments in a run as they
@@ -49,47 +58,88 @@ elif experimentName in screening_experiments:
     timestamp = get_timestamp()
 
     # =============== Main experiment =============== #
-    if not set_magnification(Zen, '5x0.35NA', optovar='2x'):
-        print('Warning: magnification not changed.')
+    objective_position = '5x0.35NA'
+    optovar_position = '2x'
+    if not set_magnification(Zen, objective_position, optovar=optovar_position):
+        log_message(log_path, verbose, 'Warning: Unable to set magnification.')
+    else:
+        log_message(log_path, verbose, 'Magnification set: {0} | {1}'.format(objective_position, optovar_position))
 
     experimentName = actual_experiments[0]
     if testing:
-        experimentName += '-Truncated'
+        truncated_experiment_file = TruncatedExperiment(Zen, experimentName)
+        experimentName = truncated_experiment_file.truncated_experiment
 
     exp = Zen.Acquisition.Experiments.GetByName(experimentName)
+
+    log_message(log_path, verbose, 'Running experiment: {}'.format(experimentName))
+
     PlateScan = Zen.Acquisition.Execute(exp)
+
+    log_message(log_path, verbose, 'Experiment completed.')
 
     barcode = get_barcode(PlateScan)
 
-    PlateScan.Save(dataPath + barcode + '-unprocessed-' + timestamp + '.czi')
+    log_message(log_path, verbose, 'Barcode: {}'.format(barcode))
+
+    filename = dataPath + barcode + '-unprocessed-' + timestamp + '.czi'
+    log_message(log_path, verbose, 'Saving experiment data to file: {} ...'.format(filename))
+    PlateScan.Save(filename)
+    log_message(log_path, verbose, 'Save completed.')
+
     PlateScan.Close()
+
+    if testing:
+        truncated_experiment_file.close()
 
     # Start tracking of saved files for transfer to image analysis server.
     with open(dataPath + 'start', 'w') as file:
         pass
 
     # =============== Plate overview =============== #
-    if not set_magnification(Zen, '5x0.35NA', optovar='1x'):
-        print('Warning: magnification not changed.')
+    objective_position = '5x0.35NA'
+    optovar_position = '1x'
+    if not set_magnification(Zen, objective_position, optovar=optovar_position):
+        log_message(log_path, verbose, 'Warning: Unable to set magnification.')
+    else:
+        log_message(log_path, verbose, 'Magnification set: {0} | {1}'.format(objective_position, optovar_position))
 
     experimentName = actual_experiments[1]
     if testing:
-        experimentName += '-Truncated'
+        truncated_experiment_file = TruncatedExperiment(Zen, experimentName)
+        experimentName = truncated_experiment_file.truncated_experiment
 
     exp = Zen.Acquisition.Experiments.GetByName(experimentName)
+
+    log_message(log_path, verbose, 'Running experiment: {}'.format(experimentName))
+
     PlateOverview = Zen.Acquisition.Execute(exp)
 
-    PlateOverview.Save(dataPath + barcode + '-PO-unprocessed-' + timestamp + '.czi')
+    log_message(log_path, verbose, 'Experiment completed.')
+
+    filename = dataPath + barcode + '-PO-unprocessed-' + timestamp + '.czi'
+    log_message(log_path, verbose, 'Saving experiment data to file: {} ...'.format(filename))
+    PlateOverview.Save(filename)
+    log_message(log_path, verbose, 'Save completed.')
+    
     PlateOverview.Close()
+
+    if testing:
+        truncated_experiment_file.close()
 
     # Restart tracking in case previous one timed-out
     with open(dataPath + 'start', 'w') as file:
-        pass
+       pass
         
     # From PAA: Whatever is printed gets picked up by the robot.
     retstring = ZenLiveScan.GetCurrentError()
     if retstring=='Successful':
         print('Experiment Completed: {}'.format(experimentName))
+        log_message(log_path, verbose, 'Macro completed successfully')
+        log_message(log_path, verbose, '=======================================================')
+    else:
+        log_message(log_path, verbose, 'Macro completed with errors')
+        log_message(log_path, verbose, '=======================================================')    
 
     # In manual exection, eject the sample.
     if not robot_execution:
@@ -107,6 +157,6 @@ else:
   <Author></Author>
   <Description></Description>
   <Keywords></Keywords>
-  <Row>47</Row>
-  <Column>35</Column>
+  <Row>14</Row>
+  <Column>39</Column>
 </Script>
