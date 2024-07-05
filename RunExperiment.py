@@ -1,17 +1,19 @@
-# ==================== Imports ==================== #
+﻿# ==================== Imports ==================== #
 # Modules that have been imported once in Zen are not
 # imported again even if their content has changed.
 # To workaround this issue, we use the reload function.
 
-import _cd7_functions, _logging, _sample_functions
+import _cd7_functions, _logging, _sample_functions, _automatic_data_transfer
 
 reload(_cd7_functions)
 reload(_logging)
 reload(_sample_functions)
+reload(_automatic_data_transfer)
 
 from _cd7_functions import set_magnification, TruncatedExperiment
 from _logging import log_message
 from _sample_functions import get_barcode, get_timestamp
+from _automatic_data_transfer import start_transfer
 
 clr.AddReferenceByPartialName('Zeiss.Micro.AMP')
 from Zeiss.Micro.AMP.Scripting import LiveScanScriptingPlugin
@@ -22,7 +24,7 @@ verbose = True
 log_path = 'D:\UserData\david\log.txt'
 log_message(log_path, verbose, '==================== Running macro ====================')
 
-experimentName = 'SpiroC_Robot_Testing'
+experimentName = 'SpiroC_Robot'
 plateType = 'Aceto96.czsht'
 additionalParameter = ''
 
@@ -34,6 +36,16 @@ actual_experiments = ['SpiroC_V010_Robot-4Channels', 'MS-PlateOverview-003']
 
 skip_experiment = False
 skip_overview = False
+
+# ==================== Data transfer ==================== #
+transfer_status = start_transfer()
+
+if transfer_status == -1:
+    log_message(log_path, verbose, 'Warning: automatic data tranfser could not be started. Please copy the data manually.')
+elif transfer_status == 0:
+    log_message(log_path, verbose, 'Automatic data tranfser: started.')
+else:
+    log_message(log_path, verbose, 'Warning: automatic data tranfser already active.')
 
 # ==================== Main ==================== #
 
