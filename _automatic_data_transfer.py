@@ -27,8 +27,10 @@ def check_transfer_status():
     
     with open(STATUS_FILE, 'r') as fp:
         lines = len(fp.readlines())
-        
-    os.remove(STATUS_FILE)
+    try:    
+        os.remove(STATUS_FILE)
+    except:
+        pass
     
     return lines
 
