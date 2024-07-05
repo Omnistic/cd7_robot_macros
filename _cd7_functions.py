@@ -64,10 +64,11 @@ class TruncatedExperiment:
         self.Zen = Zen
         self.experiment_template = experiment_template
         self.get_experiment_folder()
-        self.truncated_experiment_file = tempfile.NamedTemporaryFile(mode='w+t', prefix=experiment_template+'_truncated', suffix='.czexp', dir=self.experiment_folder, delete=False)
-        self.truncated_experiment = self.truncated_experiment_file.name.split('\\')[-1]
+        self.truncated_experiment_name = experiment_template+'_truncated'
+        self.truncated_experiment_path = os.path.join(self.experiment_folder, self.truncated_experiment_name+'.czexp')
         self.get_experiment_root(experiment_template)
         self.get_tile_region_arrays()
+        self.get_tile_regions()
         self.truncate_experiment()
 
     def get_experiment_folder(self):
@@ -81,23 +82,28 @@ class TruncatedExperiment:
     def get_tile_region_arrays(self):
         self.tile_region_arrays = self.experiment_root.find('./ExperimentBlocks/AcquisitionBlock/SubDimensionSetups/RegionsSetup/SampleHolder/SingleTileRegionArrays')
 
+    def get_tile_regions(self):
+        self.tile_regions = self.experiment_root.find('./ExperimentBlocks/AcquisitionBlock/SubDimensionSetups/RegionsSetup/SampleHolder/TileRegions')
+
     def truncate_experiment(self):
         ii = -1
         for tile_region_array in self.tile_region_arrays:
             ii += 1
-            if ii < 1:
+            if ii < 2:
                 tile_region_array.find('./IsUsedForAcquisition').text = 'true'
                 continue
             tile_region_array.find('./IsUsedForAcquisition').text = 'false'
+        
+        ii = -1
+        for tile_region in self.tile_regions:
+            ii += 1
+            if ii < 2:
+                tile_region.find('./IsUsedForAcquisition').text = 'true'
+                continue
+            tile_region.find('./IsUsedForAcquisition').text = 'false'
 
-        self.experiment_tree.write(self.truncated_experiment_file.name)
-        self.truncated_experiment_file.close()
+        self.experiment_tree.write(self.truncated_experiment_path)
 
     def close(self):
-        try:
-            self.truncated_experiment_file.close()
-        except:
-            pass
-
-        if os.path.exists(self.truncated_experiment_file.name):
-            os.remove(self.truncated_experiment_file.name)
+        if os.path.exists(self.truncated_experiment_path):
+            os.remove(self.truncated_experiment_path)
