@@ -10,9 +10,9 @@ reload(_cd7_functions)
 - I do not know whether **water immersion** is applied using the `set_magnification` function. When testing this function, changing to the `'50x1.2NA'` lens was suspiciously fast (compared to the time it takes to immerse the lens usually).
 # File structure
 ## CD7 functions
-`cd7_functions.py` contains functions related to the instrument. Currently, there's a single function `set_magnification(Zen, objective, optovar='1x')` used to change the instrument overall magnification: objective and optovar. This function relies on two hardcoded dictionaries consisting of string keys, which correspond to a human-readable magnification (e.g. `objective='5x0.35NA'` and `optovar='0.5x'`), and index values, which correspond to the index required by the Zen command.
+`_cd7_functions.py` contains functions related to the instrument. Currently, there's a single function `set_magnification(Zen, objective, optovar='1x')` used to change the instrument overall magnification: objective and optovar. This function relies on two hardcoded dictionaries consisting of string keys, which correspond to a human-readable magnification (e.g. `objective='5x0.35NA'` and `optovar='0.5x'`), and index values, which correspond to the index required by the Zen command.
 ## Sample functions
-`sample_functions.py` contains functions related to the sample. Currently, there's a function to extract a barcode from the metadata, and another function to create a timestamp. Although the metadata of each file contains a timestamp, having a common timestamp for the exepriment and its overview (which is considered another experiment) is desirable.
+`_sample_functions.py` contains functions related to the sample. Currently, there's a function to extract a barcode from the metadata, and another function to create a timestamp. Although the metadata of each file contains a timestamp, having a common timestamp for the exepriment and its overview (which is considered another experiment) is desirable.
 ## RunExperiment
 The single ZenBlue macro that needs to be executed by the user or the robot. Most of the parameters have been moved at the top of the file.
 # What happens next
