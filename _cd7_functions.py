@@ -59,6 +59,45 @@ def get_experiment_folder(Zen):
     
     return active_experiment[:active_experiment.rfind('\\')+1]
 
+def set_sample_tab(ZenLiveScan, sample_tab_dict):
+    conf = ZenLiveScan.GetConfiguration()
+
+    if 'Sample Carrier' in sample_tab_dict:
+        conf.SampleCarrierTypeTemplate = sample_tab_dict['Sample Carrier']
+
+    if 'Measure Bottom Thickness' in sample_tab_dict:
+        conf.MeasureBottomThickness = sample_tab_dict['Measure Bottom Thickness']
+
+        if conf.MeasureBottomThickness and 'Determine Bottom Material' in sample_tab_dict:
+            conf.DetermineBottonMaterial = sample_tab_dict['Determine Bottom Material']
+
+    if 'Sample Carrier Detection' in sample_tab_dict:
+        conf.SampleCarrierDetection = sample_tab_dict['Sample Carrier Detection']
+
+    if 'Sample Carrier Overview' in sample_tab_dict:
+        conf.CreateCarrierOverview = sample_tab_dict['Sample Carrier Overview']
+
+    if 'Read Barcodes' in sample_tab_dict:
+        conf.ReadBarcodes = True
+        if sample_tab_dict['Read Barcodes'] == 'none':
+            conf.ReadBarcodes = False
+            conf.UseLeftBarcode = False
+            conf.UseRightBarcode = False
+        if sample_tab_dict['Read Barcodes'] == 'left':
+            conf.UseLeftBarcode = True
+            conf.UseRightBarcode = False
+        elif sample_tab_dict['Read Barcodes'] == 'right':
+            conf.UseLeftBarcode = False
+            conf.UseRightBarcode = True
+        elif sample_tab_dict['Read Barcodes'] == 'both':
+            conf.UseLeftBarcode = True
+            conf.UseRightBarcode = True
+
+    if 'Automatic Sample Carrier Calibration' in sample_tab_dict:
+        conf.AutomaticSampleCarrierCalibration = sample_tab_dict['Automatic Sample Carrier Calibration']
+
+    ZenLiveScan.SetConfiguration(conf)
+
 class TruncatedExperiment:
     def __init__(self, Zen, experiment_template):
         self.Zen = Zen

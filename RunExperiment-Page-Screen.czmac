@@ -10,11 +10,11 @@ reload(_RunExperiment_core)
 clr.AddReferenceByPartialName('Zeiss.Micro.AMP')
 from Zeiss.Micro.AMP.Scripting import LiveScanScriptingPlugin
 
-_RunExperiment_core.run_experiment(Zen, LiveScanScriptingPlugin, page_screen=False)
+_RunExperiment_core.run_experiment(Zen, LiveScanScriptingPlugin, page_screen=True)
 </Text>
   <Author></Author>
   <Description></Description>
   <Keywords></Keywords>
   <Row>8</Row>
-  <Column>64</Column>
+  <Column>82</Column>
 </Script>
