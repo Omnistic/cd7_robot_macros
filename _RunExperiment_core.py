@@ -78,10 +78,12 @@ def run_experiment(Zen, LiveScanScriptingPlugin, page_screen):
     
         robot_execution = True
     except:
-        # In manual execution, load the sample.
-        ZenLiveScan.LoadTrayAndPrescan()
-    
         robot_execution = False
+
+    # The robot already loads the sample, but the prescan parameters seem to be those currently active.
+    # This is a quick fix to force an update of the prescan parameters. A long term solution is to either
+    # have the robot load correct prescan parameters or not load with the robot and only load in the macro.
+    ZenLiveScan.LoadTrayAndPrescan()
     
     log_message(log_path, verbose, 'Robot execution: {}'.format(robot_execution))
     
